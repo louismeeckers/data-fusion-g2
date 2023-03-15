@@ -53,20 +53,9 @@ def model_pipeline(hyperparameters):
 def make(config):
 	transform = A.Compose(
 		[
-			# A.HorizontalFlip(p=0.5),
-			# A.RandomBrightnessContrast(p=0.3),
-			# A.Rotate(limit=15, p=0.5, border_mode=cv2.BORDER_CONSTANT),
-			# A.RandomResizedCrop(height=config.image_height, width=config.image_width, scale=(0.6, 1.0), ratio=(0.75, 1.333), interpolation=1, p=0.5),
-			# A.Resize(height=config.image_height, width=config.image_width),
-
 			A.RandomBrightnessContrast(p=0.3),
 			A.Rotate(limit=35, p=1.0),
             A.HorizontalFlip(p=0.5),
-			A.Normalize(
-                mean=[0.0, 0.0, 0.0],
-                std=[1.0, 1.0, 1.0],
-                max_pixel_value=255.0,
-            ),
 			A.RandomResizedCrop(height=config.image_height, width=config.image_width, scale=(0.6, 1.0), ratio=(0.75, 1.333), interpolation=1, p=0.5),
 			A.Resize(height=config.image_height, width=config.image_width),
 		],
@@ -74,11 +63,6 @@ def make(config):
 
 	resize = A.Compose(
 		[
-			A.Normalize(
-                mean=[0.0, 0.0, 0.0],
-                std=[1.0, 1.0, 1.0],
-                max_pixel_value=255.0,
-            ),
 			A.Resize(height=config.image_height, width=config.image_width),
 		],
 	)

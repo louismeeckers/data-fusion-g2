@@ -39,10 +39,10 @@ class PlantDataset(torch.utils.data.Dataset):
 
 		# Images
 		image_color = Image.open(os.path.join(DATA_PATH, item_label['color_cam_path'])).convert('RGB')
-		image_color = np.array(image_color, dtype=np.float32) # / 255.0
+		image_color = np.array(image_color, dtype=np.float32) / 255.0 # normalize
 
 		image_side = Image.open(os.path.join(DATA_PATH, item_label['side_cam_path'])).convert('RGB')
-		image_side = np.array(image_side, dtype=np.float32) # / 255.0
+		image_side = np.array(image_side, dtype=np.float32) / 255.0 # normalize
 		
 		if self.transform is not None:
 			image_color = self.transform(image=image_color)['image']

@@ -28,6 +28,11 @@ class CNN(nn.Module):
 			nn.BatchNorm2d(128),
 			nn.ReLU(),
 			nn.MaxPool2d(kernel_size=2, stride=2))
+		self.layer1_5 = nn.Sequential(
+			nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+			nn.BatchNorm2d(256),
+			nn.ReLU(),
+			nn.MaxPool2d(kernel_size=2, stride=2))
 
 		# For Image 2
 		self.layer2_1 = nn.Sequential(
@@ -50,13 +55,13 @@ class CNN(nn.Module):
 			nn.BatchNorm2d(128),
 			nn.ReLU(),
 			nn.MaxPool2d(kernel_size=2, stride=2))
-
-		# For concat
-		self.layer5 = nn.Sequential(
-			nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-			nn.BatchNorm2d(512),
+		self.layer2_5 = nn.Sequential(
+			nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+			nn.BatchNorm2d(256),
 			nn.ReLU(),
 			nn.MaxPool2d(kernel_size=2, stride=2))
+
+		# For concat
 		self.fc = nn.Sequential(
 			nn.Dropout(0.5),
 			nn.Linear(15*20*512, 512),
@@ -74,15 +79,16 @@ class CNN(nn.Module):
 		x1 = self.layer1_2(x1)
 		x1 = self.layer1_3(x1)
 		x1 = self.layer1_4(x1)
+		x1 = self.layer1_5(x1)
 
 		# Image 2
 		x2 = self.layer2_1(x2)
 		x2 = self.layer2_2(x2)
 		x2 = self.layer2_3(x2)
 		x2 = self.layer2_4(x2)
+		x2 = self.layer2_5(x2)
 
 		x = torch.cat((x1, x2), 1)
-		x = self.layer5(x)
 		x = x.reshape(x.size(0), -1)
 		x = self.fc(x)
 		x = self.fc1(x)

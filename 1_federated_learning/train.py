@@ -10,7 +10,7 @@ import wandb
 
 from model import CNN
 from dataset import PlantDataset
-from utils import load_checkpoint, save_checkpoint
+from utils import load_checkpoint, save_checkpoint, optimizer_to
 
 # Ensure deterministic behavior
 torch.backends.cudnn.deterministic = True
@@ -31,6 +31,7 @@ class Client:
 		self.client_dir = client_dir
 		self.config = config
 
+		# Data
 		transform = A.Compose(
 			[
 				A.RandomBrightnessContrast(p=0.3),
@@ -47,7 +48,6 @@ class Client:
 			],
 		)
 
-		# Data
 		self.dataset_train = PlantDataset(set_dir='train', client_dir=self.client_dir, transform=(transform if self.config['data_augmentation'] else resize))
 		self.loader_train = torch.utils.data.DataLoader(dataset=self.dataset_train, batch_size=self.config['batch_size'], shuffle=True, pin_memory=True, num_workers=2)
 
@@ -57,16 +57,17 @@ class Client:
 		# Model
 		self.model = CNN()
 
-		# Criterion and Optimize
+		# Criterion and Optimizer
 		self.criterion = nn.BCELoss()
 		self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config['learning_rate'], momentum=config['momentum'])
 
 	def receive_from_server(self, model_state_dict, optimizer_state_dict):
 		self.model.load_state_dict(model_state_dict, strict=True)
 		self.optimizer.load_state_dict(optimizer_state_dict)
+		optimizer_to(self.optimizer, device)
 
 	def train(self):
-		self.model.to(device)	
+		self.model.to(device)
 
 		example_ct = 0 # number of examples seen
 		batch_ct = 0 # number of batches seen
@@ -111,18 +112,30 @@ class Client:
 class Server:
 	def __init__(self, clients, config):
 		self.clients = clients
+		self.config = config
 
+		# Data
+		resize = A.Compose(
+			[
+				A.Resize(height=self.config['image_height'], width=self.config['image_width']),
+			],
+		)
+
+		self.dataset_valid = PlantDataset(set_dir='valid', client_dir=None, transform=resize)
+		self.loader_valid = torch.utils.data.DataLoader(dataset=self.dataset_valid, batch_size=self.config['batch_size'], shuffle=True, pin_memory=True, num_workers=2)
+
+		# Model
 		self.model = CNN().to(device)
 		self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config['learning_rate'], momentum=config['momentum'])
 
-		self.model_state_dict = self.model.state_dict()
-		self.optimizer_state_dict = self.optimizer.state_dict()
+		# Criterion
+		self.criterion = nn.BCELoss()
 
 	def send_to_clients(self):
 		for client in self.clients:
 			client.receive_from_server(self.model.state_dict(), self.optimizer.state_dict())
 
-	def receive_from_clients(self):
+	def receive_from_clients(self, k):
 		# 1: Aggregate the weights
 		model_state_dict_total, optimizer_state_dict_total = clients[0].send_to_server()
 
@@ -136,35 +149,48 @@ class Server:
 		for layer in model_state_dict_total:
 			model_state_dict_total[layer] = model_state_dict_total[layer].float() / len(clients)
 
-		self.model.load_state_dict(self.model_state_dict, strict=True)
-		self.optimizer.load_state_dict(self.optimizer_state_dict)
+		self.model.to(device)
 
 		# 3: Validation loop
-		# self.model.to(device)
+		self.model.load_state_dict(model_state_dict_total, strict=True)
+		self.optimizer.load_state_dict(optimizer_state_dict_total)
 
-		# valid_loss = 0
-		# total, correct = 0, 0
-		# model.eval()
-		# with torch.no_grad():
-		# 	for inputs_color, inputs_side, labels in tqdm(loader_valid, position=1, desc='Batch valid', leave=False, dynamic_ncols=True):
+		valid_loss = 0
+		total, correct = 0, 0
+		self.model.eval()
+		with torch.no_grad():
+			for inputs_color, inputs_side, labels in tqdm(self.loader_valid, position=1, desc='Batch valid', leave=False, dynamic_ncols=True):
 				
-		# 		if config.image_type == 'color':
-		# 			inputs = inputs_color
-		# 		elif config.image_type == 'side':
-		# 			inputs = inputs_side
-		# 		inputs = inputs.float().to(device)
-		# 		labels = labels.float().to(device)
+				if self.config['image_type'] == 'color':
+					inputs = inputs_color
+				elif self.config['image_type'] == 'side':
+					inputs = inputs_side
+				inputs = inputs.float().to(device)
+				labels = labels.float().to(device)
 
-		# 		# Forward pass ➡
-		# 		preds = model(inputs).squeeze()
-		# 		loss = criterion(preds, labels)
-		# 		valid_loss += loss
+				# Forward pass ➡
+				preds = self.model(inputs).squeeze()
+				loss = self.criterion(preds, labels)
+				valid_loss += loss
 
-		# 		# Accuracy
-		# 		total += labels.size(0)
-		# 		correct += (torch.round(preds) == torch.round(labels)).sum().item()
+				# Accuracy
+				total += labels.size(0)
+				correct += (torch.round(preds) == torch.round(labels)).sum().item()
 
-		# self.model.to('cpu')
+		self.model.to('cpu')
+
+		# Save model
+		checkpoint = {
+			"state_dict": self.model.state_dict(),
+			"optimizer": self.optimizer.state_dict(),
+		}
+		filename = f'./runs/test.pth.tar'
+		save_checkpoint(checkpoint, filename)
+
+		# Log losses and scores
+		f = open('sample.txt', 'a')
+		f.write(f'round: {k},\t valid_loss: {valid_loss},\t accuracy: {correct/total},\n')
+		f.close()
 
 if __name__ == '__main__':
 	config = dict(
@@ -197,6 +223,6 @@ if __name__ == '__main__':
 			for client in tqdm(clients, position=1, desc='Client', leave=False, dynamic_ncols=True):
 				client.train()
 			
-			server.receive_from_clients()
+			server.receive_from_clients(k)
 
 	hfl(rounds=10)

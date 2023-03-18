@@ -33,7 +33,7 @@ config = dict(
 	learning_rate=0.001,
 	momentum=0.9,
 	dataset='Plant',
-	image_type='side', # color, side
+	image_type='color', # color, side
 	data_augmentation=True,
 	image_height=480, # 480, 960
 	image_width=640, # 640, 1280
@@ -51,6 +51,7 @@ def model_pipeline(hyperparameters):
 
 
 def make(config):
+	# Data
 	transform = A.Compose(
 		[
 			A.RandomBrightnessContrast(p=0.3),
@@ -67,7 +68,6 @@ def make(config):
 		],
 	)
 
-	# Data
 	dataset_train = PlantDataset(set_dir='train', transform=(transform if config.data_augmentation else resize))
 	loader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=config.batch_size, shuffle=True, pin_memory=True, num_workers=2)
 
@@ -81,7 +81,7 @@ def make(config):
 		model = nn.DataParallel(model)
 	model = model.to(device)
 
-	# Loss and Optimizer
+	# Criterion and Optimizer
 	criterion = build_criterion(config)
 	optimizer = build_optimizer(model, config)
 

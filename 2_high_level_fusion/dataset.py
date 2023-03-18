@@ -6,8 +6,6 @@ from PIL import Image
 import cv2
 import pandas as pd
 import albumentations as A
-from sklearn.metrics import cohen_kappa_score
-from itertools import combinations
 
 from utils import compute_label_01, get_experts_weights
 
@@ -17,7 +15,6 @@ class PlantDataset(torch.utils.data.Dataset):
 	def __init__(self, set_dir, transform=None, target_transform=None):
 		self.set_dir = set_dir
 
-		self.plant_directories = []
 		self.client_directories = ['A1', 'A2', 'A4', 'A6', 'B1', 'B2', 'B3', 'B4']
 		self.df = pd.read_csv(os.path.join(DATA_PATH, 'seedling_labels.csv'))
 

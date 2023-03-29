@@ -12,4 +12,5 @@ We implemented 6 approaches:
 ### Federated Learning
 - Horizontal FL + CNN (section 3.3 in the report)
 
-To find how we solved the **bonus task** (Cohen's Kappa method), see report section 2.2.
+
+To find how we solved the _**bonus task**_ (Cohen's Kappa method), see report section 2.2.

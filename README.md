@@ -1,27 +1,15 @@
 # Data Fusion Assignment
 
-This assignment is a group assignment, with a maximum group size of 5. Students are expected to form their own groups. Please register to the groups in Canvas and submit your solution as the group.
+We implemented 6 approaches:
 
-For this assignment, you will develop a model that performs a binary classification of tomato seedlings based on images taken of these seedlings (1,2 = normal, 3,4 = abnormal). The data is available here Links to an external site.. See the description of the data in the presentation of the guest lecturer. 
+### High-Level Fusion
+- Randomly initialized CNN (section 3.1.1. in the report)
+- Pre-trained CNN (section 3.1.2. in the report)
+### Mid-Level Fusion
+- Randomly initialized CNN (section 3.2.1. in the report)
+- Local Binary Pattern + kNN (section 3.2.2. in the report)
+- Multiple Methods （ORB, BRISK, and SIFT) + SVC (section 3.2.3. in the report)
+### Federated Learning
+- Horizontal FL + CNN (section 3.3 in the report)
 
-Use at least 2 data fusion techniques (Low-level fusion, Mid-level fusion, High-level fusion, Federated-learning).
-
-In your report:
-
-- Explain how and why you used these techniques & show your results
-
-- Explain why you think some techniques worked better than other techniques
-
-Hand in code & report and prepare the presentation, showing your approaches.
-
- 
-
-Prepare 3 minute presentation (pitch), that answers two questions:
-
-what is your most important result?
-what are you most proud of?
- 
-
-You may use a programming language of your choice and any available library.
-
-Mark clearly your own work from used packages.
+To find how we solved the bonus task (Cohen's Kappa method), see report section 2.2.
